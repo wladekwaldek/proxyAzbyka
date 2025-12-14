@@ -4,27 +4,26 @@ import { Readable } from "stream";
 const app = express();
 const PORT = 3000;
 
+// CHANGE THIS
+const TARGET = "https://azbyka.ru";
+
 app.use(async (req, res) => {
   try {
-    const BASE_URL = "https://azbyka.ru";
-    const targetUrl = BASE_URL + req.originalUrl;
+    const url = new URL(req.originalUrl, TARGET);
 
-    const response = await fetch(targetUrl, {
+    const response = await fetch(url.href, {
+      method: req.method,
       headers: {
-        "User-Agent": "Mozilla/5.0",
-        // ❌ DO NOT request compressed content
-        "Accept-Encoding": "identity",
+        "User-Agent": req.headers["user-agent"] || "Mozilla/5.0",
+        Accept: "*/*",
+        "Accept-Encoding": "identity", // 🔑 avoid compression issues
       },
     });
 
     res.status(response.status);
 
-    // Copy headers EXCEPT content-encoding & content-length
     response.headers.forEach((value, key) => {
-      if (
-        key.toLowerCase() !== "content-encoding" &&
-        key.toLowerCase() !== "content-length"
-      ) {
+      if (!["content-encoding", "content-length"].includes(key.toLowerCase())) {
         res.setHeader(key, value);
       }
     });
@@ -33,7 +32,6 @@ app.use(async (req, res) => {
       return res.end();
     }
 
-    // Stream safely
     Readable.fromWeb(response.body).pipe(res);
   } catch (err) {
     console.error(err);
@@ -42,5 +40,5 @@ app.use(async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Proxy running at http://localhost:${PORT}`);
+  console.log(`Mobile proxy running on http://localhost:${PORT}`);
 });
