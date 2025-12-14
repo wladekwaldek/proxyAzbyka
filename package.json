@@ -1,0 +1,16 @@
+{
+  "name": "proxyazbyka",
+  "version": "1.0.0",
+  "description": "proxy for azbyka.ru",
+  "license": "ISC",
+  "author": "wladekwaldek",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}
