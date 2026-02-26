@@ -1,11 +1,13 @@
 import express from "express";
 import { Readable } from "stream";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const app = express();
-const PORT = 3000;
 
-// CHANGE THIS
-const TARGET = "https://azbyka.ru";
+const PORT = process.env.PORT;
+const TARGET = process.env.BASE_URL;
 
 app.use(async (req, res) => {
   try {
@@ -16,7 +18,7 @@ app.use(async (req, res) => {
       headers: {
         "User-Agent": req.headers["user-agent"] || "Mozilla/5.0",
         Accept: "*/*",
-        "Accept-Encoding": "identity", // 🔑 avoid compression issues
+        "Accept-Encoding": "identity",
       },
     });
 
