@@ -8,6 +8,14 @@ const app = express();
 
 const PORT = process.env.PORT;
 const TARGET = process.env.BASE_URL;
+const VERSION = process.env.VERSION;
+const APK_URL = process.env.APK_URL;
+
+app.use(express.json());
+
+app.get("/app-version", (req, res) => {
+  res.json({ latestVersion: VERSION, apkUrl: APK_URL });
+});
 
 app.use(async (req, res) => {
   try {
@@ -42,5 +50,7 @@ app.use(async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Mobile proxy running on http://localhost:${PORT}`);
+  console.log(
+    `Mobile proxy running on http://localhost:${PORT}\nVersion: ${VERSION}\nAPK URL: ${APK_URL}`,
+  );
 });
