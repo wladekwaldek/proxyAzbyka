@@ -1,6 +1,7 @@
 import express from "express";
 import { Readable } from "stream";
 import dotenv from "dotenv";
+import cors from "cors";
 
 dotenv.config();
 
@@ -10,8 +11,10 @@ const PORT = process.env.PORT;
 const TARGET = process.env.BASE_URL;
 const VERSION = process.env.VERSION;
 const APK_URL = process.env.APK_URL;
+const DOMEN = process.env.DOMEN;
 
 app.use(express.json());
+app.use(cors({ origin: DOMEN, credentials: true }));
 
 app.get("/app-version", (req, res) => {
   res.json({ latestVersion: VERSION, apkUrl: APK_URL });
