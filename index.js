@@ -89,4 +89,6 @@ if (TOKEN) {
       }
     }
   });
+} else {
+  console.warn("Telegram bot token not provided. Bot will not start.");
 }
