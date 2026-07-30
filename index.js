@@ -3,6 +3,9 @@ import { Readable } from "stream";
 import dotenv from "dotenv";
 import cors from "cors";
 import TelegramApi from "node-telegram-bot-api";
+import router from "./path.js";
+import mongoose from "mongoose";
+import User from "./models/User_model.js";
 
 dotenv.config();
 
@@ -10,55 +13,65 @@ const app = express();
 
 const PORT = process.env.PORT;
 const TARGET = process.env.BASE_URL;
-const VERSION = process.env.VERSION;
-const APK_URL = process.env.APK_URL;
 const DOMEN = process.env.DOMEN;
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const MONGO_URI = process.env.MONGO_URI;
+const WELCOME_SPEECH = process.env.WELCOME_SPEECH;
+
+const DOMEN_DEV = process.env.DOMEN_DEV;
+const DOMEN_LOC = process.env.DOMEN_LOC;
 
 app.use(express.json());
-app.use(cors({ origin: DOMEN, credentials: true }));
+app.use(cors({ origin: [DOMEN_LOC, DOMEN_DEV], credentials: true }));
 
-app.get("/app-version", (req, res) => {
-  res.json({ latestVersion: VERSION, apkUrl: APK_URL });
-});
+app.use("/api", router);
 
-app.use(async (req, res) => {
+// app.use(async (req, res) => {
+//   try {
+//     const url = new URL(req.originalUrl, TARGET);
+
+//     const response = await fetch(url.href, {
+//       method: req.method,
+//       headers: {
+//         "User-Agent": req.headers["user-agent"] || "Mozilla/5.0",
+//         Accept: "*/*",
+//         "Accept-Encoding": "identity",
+//       },
+//     });
+
+//     res.status(response.status);
+
+//     response.headers.forEach((value, key) => {
+//       if (!["content-encoding", "content-length"].includes(key.toLowerCase())) {
+//         res.setHeader(key, value);
+//       }
+//     });
+
+//     if (!response.body) {
+//       return res.end();
+//     }
+
+//     Readable.fromWeb(response.body).pipe(res);
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).send("Proxy error");
+//   }
+// });
+
+async function start() {
   try {
-    const url = new URL(req.originalUrl, TARGET);
+    await mongoose.connect(MONGO_URI);
 
-    const response = await fetch(url.href, {
-      method: req.method,
-      headers: {
-        "User-Agent": req.headers["user-agent"] || "Mozilla/5.0",
-        Accept: "*/*",
-        "Accept-Encoding": "identity",
-      },
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`server run on port ${PORT}`);
     });
-
-    res.status(response.status);
-
-    response.headers.forEach((value, key) => {
-      if (!["content-encoding", "content-length"].includes(key.toLowerCase())) {
-        res.setHeader(key, value);
-      }
-    });
-
-    if (!response.body) {
-      return res.end();
-    }
-
-    Readable.fromWeb(response.body).pipe(res);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Proxy error");
+  } catch (e) {
+    console.log(e.message);
+    process.exit(1);
   }
-});
+}
 
-app.listen(PORT, () => {
-  console.log(
-    `Mobile proxy running on http://localhost:${PORT}\nVersion: ${VERSION}\nAPK URL: ${APK_URL}`,
-  );
-});
+start();
 
 if (TOKEN) {
   const bot = new TelegramApi(TOKEN, { polling: true });
@@ -70,25 +83,48 @@ if (TOKEN) {
     if (msg.text && msg.text.trim() !== "") {
       switch (msg.text) {
         case "/start":
-          await bot.sendMessage(
-            chatId,
-            `Привет, ${first_name}! Я прокси-сервер для мобильного приложения Азбука Веры. Я могу помочь тебе получить последнюю версию приложения и ответить на твои вопросы. Просто напиши мне!`,
-          );
+          const condidate = await User.findOne({ id });
+
+          if (condidate) {
+            bot.sendMessage(chatId, `hi ${condidate.name}`);
+          } else {
+            const user = new User({
+              id,
+              name: first_name,
+              username,
+              language: language_cod,
+              is_bot,
+              time: new Date(date * 1000),
+              notes_time: {
+                houres: null,
+                minutes: null,
+              },
+              last_login: new Date(date * 1000),
+            });
+
+            await user.save();
+
+            bot.sendMessage(
+              chatId,
+              `Привет ${first_name}.\n ${WELCOME_SPEECH}
+              `,
+            );
+          }
           break;
-        case "/version":
-          await bot.sendMessage(
-            chatId,
-            `Последняя версия приложения: ${VERSION}\nСсылка для скачивания: ${APK_URL}`,
-          );
+
+        case "/help":
+          bot.sendMessage(chatId, "Вот список доступных команд...");
           break;
+
         default:
-          await bot.sendMessage(
-            chatId,
-            `Извини, я не понимаю эту команду. Попробуй /start или /version.`,
-          );
+          if (msg.text.startsWith("/")) {
+            bot.sendMessage(chatId, "Неизвестная команда.");
+          } else {
+            bot.sendMessage(chatId, "Я пока не понимаю такие сообщения.");
+          }
       }
+    } else {
+      bot.sendMessage(chatId, "Oops, something went wrong. Please try again.");
     }
   });
-} else {
-  console.warn("Telegram bot token not provided. Bot will not start.");
 }
