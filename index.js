@@ -26,37 +26,37 @@ app.use(cors({ origin: [DOMEN_LOC, DOMEN_DEV], credentials: true }));
 
 app.use("/api", router);
 
-// app.use(async (req, res) => {
-//   try {
-//     const url = new URL(req.originalUrl, TARGET);
+app.use(async (req, res) => {
+  try {
+    const url = new URL(req.originalUrl, TARGET);
 
-//     const response = await fetch(url.href, {
-//       method: req.method,
-//       headers: {
-//         "User-Agent": req.headers["user-agent"] || "Mozilla/5.0",
-//         Accept: "*/*",
-//         "Accept-Encoding": "identity",
-//       },
-//     });
+    const response = await fetch(url.href, {
+      method: req.method,
+      headers: {
+        "User-Agent": req.headers["user-agent"] || "Mozilla/5.0",
+        Accept: "*/*",
+        "Accept-Encoding": "identity",
+      },
+    });
 
-//     res.status(response.status);
+    res.status(response.status);
 
-//     response.headers.forEach((value, key) => {
-//       if (!["content-encoding", "content-length"].includes(key.toLowerCase())) {
-//         res.setHeader(key, value);
-//       }
-//     });
+    response.headers.forEach((value, key) => {
+      if (!["content-encoding", "content-length"].includes(key.toLowerCase())) {
+        res.setHeader(key, value);
+      }
+    });
 
-//     if (!response.body) {
-//       return res.end();
-//     }
+    if (!response.body) {
+      return res.end();
+    }
 
-//     Readable.fromWeb(response.body).pipe(res);
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).send("Proxy error");
-//   }
-// });
+    Readable.fromWeb(response.body).pipe(res);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Proxy error");
+  }
+});
 
 async function start() {
   try {
