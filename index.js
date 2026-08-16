@@ -6,7 +6,7 @@ import TelegramApi from "node-telegram-bot-api";
 import router from "./path.js";
 import mongoose from "mongoose";
 import User from "./models/User_model.js";
-
+import "./scheduler.js";
 dotenv.config();
 
 const app = express();
@@ -17,14 +17,17 @@ const DOMEN = process.env.DOMEN;
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const MONGO_URI = process.env.MONGO_URI;
 const WELCOME_SPEECH = process.env.WELCOME_SPEECH;
-
-const DOMEN_DEV = process.env.DOMEN_DEV;
-const DOMEN_LOC = process.env.DOMEN_LOC;
+const VERSION = process.env.VERSION;
+const APK_URL = process.env.APK_URL;
 
 app.use(express.json());
-app.use(cors({ origin: [DOMEN_LOC, DOMEN_DEV], credentials: true }));
+app.use(cors({ origin: DOMEN, credentials: true }));
 
 app.use("/api", router);
+
+app.get("/app-version", (req, res) => {
+  res.json({ latestVersion: VERSION, apkUrl: APK_URL });
+});
 
 app.use(async (req, res) => {
   try {
@@ -90,13 +93,14 @@ if (TOKEN) {
           } else {
             const user = new User({
               id,
+              chatId,
               name: first_name,
               username,
               language: language_cod,
               is_bot,
               time: new Date(date * 1000),
               notes_time: {
-                houres: null,
+                hours: null,
                 minutes: null,
               },
               last_login: new Date(date * 1000),
