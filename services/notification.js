@@ -19,6 +19,20 @@ export function getNextReminder(hours, minutes, timezone) {
   return reminder.toUTC().toJSDate();
 }
 
+export async function getQuoteOfDay() {
+  const response = await fetch(
+    `${process.env.BASE_URL}/wp-json/az/v1/bquote-of-day`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    },
+  );
+  const data = await response.json();
+  return data.quote ?? data["quote"] ?? "Не удалось загрузить отрывок.";
+}
+
 export async function processNotifications() {
   const now = new Date();
 
@@ -32,9 +46,14 @@ export async function processNotifications() {
 
   console.log(`Найдено уведомлений: ${users.length}`);
 
+  const quote = await getQuoteOfDay();
+
   for (const user of users) {
     try {
-      await sendTelegramMessage(user.chatId, "📖 Пора читать Евангелие дня!");
+      await sendTelegramMessage(
+        user.chatId,
+        `📖 Пора читать Евангелие дня!\n\n${quote}`,
+      );
 
       user.next_reminder_at = getNextReminder(
         user.notes_time.hours,
