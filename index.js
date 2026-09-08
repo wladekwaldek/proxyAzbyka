@@ -89,7 +89,7 @@ if (TOKEN) {
           const condidate = await User.findOne({ id });
 
           if (condidate) {
-            bot.sendMessage(chatId, `hi ${condidate.name}`);
+            bot.sendMessage(chatId, `Приветствую тебя снова ${condidate.name}`);
           } else {
             const user = new User({
               id,
