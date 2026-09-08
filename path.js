@@ -4,14 +4,73 @@ import { DateTime } from "luxon";
 import User from "./models/User_model.js";
 import { sendTelegramMessage } from "./services/telegram.js";
 import { getNextReminder } from "./services/notification.js";
+import Database from "better-sqlite3";
 
 dotenv.config();
 
+const db = new Database("downloads.db");
+
 const router = Router();
 
-router.post("/get-user", (req, res) => {
-  const { id } = req.body;
-  res.json({ message: `User: ${id}` });
+const APK_URL = process.env.APK_URL;
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS stats (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    downloads INTEGER NOT NULL DEFAULT 0
+  );
+
+  INSERT OR IGNORE INTO stats (id, downloads)
+  VALUES (1, 0);
+`);
+
+const increment = db.prepare(`
+  UPDATE stats
+  SET downloads = downloads + 1
+  WHERE id = 1
+`);
+
+const getStats = db.prepare(`
+  SELECT downloads
+  FROM stats
+  WHERE id = 1
+`);
+
+router.get("/apk", (req, res) => {
+  increment.run();
+
+  const count = getStats.get().downloads;
+
+  console.log(`[DOWNLOAD] #${count} ${new Date().toISOString()} ${req.ip}`);
+
+  res.redirect(302, APK_URL);
+});
+
+router.get("/stats", (req, res) => {
+  res.json(getStats.get());
+});
+
+router.post("/set-last-login", async (req, res) => {
+  const { id, last_login } = req.body;
+  try {
+    if (!id || !last_login) {
+      return res
+        .status(403)
+        .json({ message: "Вы не зарегистрированы в системе." });
+    }
+
+    const time = await User.findOneAndUpdate({ id }, { last_login }).populate(
+      "notifications_enabled",
+    );
+
+    if (!time) {
+      return res.status(403).json({ message: "no notification." });
+    }
+    res.json({ notice: time });
+  } catch (e) {
+    console.log(e);
+    res.status(500).json({ message: "Someting wrong." });
+  }
 });
 
 router.post("/schedule-notification", async (req, res) => {
