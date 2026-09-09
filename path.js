@@ -58,15 +58,12 @@ router.post("/set-last-login", async (req, res) => {
         .status(403)
         .json({ message: "Вы не зарегистрированы в системе." });
     }
-
-    const time = await User.findOneAndUpdate({ id }, { last_login }).populate(
-      "notifications_enabled",
-    );
+    const time = await User.findOneAndUpdate({ id }, { last_login }).populate();
 
     if (!time) {
       return res.status(403).json({ message: "no notification." });
     }
-    res.json({ notice: time });
+    res.json({ notice: time?.notifications_enabled });
   } catch (e) {
     console.log(e);
     res.status(500).json({ message: "Someting wrong." });
